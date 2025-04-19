@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Teachable Machine Rear Camera</title>
+  <title>Teachable Machine Back Camera</title>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
   <style>
     body {
@@ -32,9 +32,9 @@
       model = await tmImage.load(modelURL, metadataURL);
       maxPredictions = model.getTotalClasses();
 
-      const flip = false; // false = rear camera
-      webcam = new tmImage.Webcam(200, 200, flip);
-      await webcam.setup({ facingMode: "environment" }); // force rear camera
+      // Rear camera fix
+      webcam = new tmImage.Webcam(200, 200, false); // 'false' disables flip (no mirror)
+      await webcam.setup({ facingMode: { exact: "environment" } }); // Force rear camera
       await webcam.play();
       window.requestAnimationFrame(loop);
 
@@ -42,7 +42,7 @@
     }
 
     async function loop() {
-      webcam.update(); 
+      webcam.update();
       await predict();
       window.requestAnimationFrame(loop);
     }
@@ -51,7 +51,8 @@
       const prediction = await model.predict(webcam.canvas);
       prediction.sort((a, b) => b.probability - a.probability);
       const best = prediction[0];
-      document.getElementById("label").innerText = `Prediction: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
+      document.getElementById("label").innerText =
+        `Prediction: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
 
       // Send result to MIT App Inventor
       if (window.AppInventor) {
