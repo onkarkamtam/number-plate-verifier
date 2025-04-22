@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Classifier Engine</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
@@ -18,7 +18,7 @@
 </head>
 <body>
   <script type="text/javascript">
-    const URL = "https://teachablemachine.withgoogle.com/models/GDWIDjNLs/";    
+    const URL = "./"; // Since model files are in the same folder
 
     let model, webcam, maxPredictions;
 
@@ -35,7 +35,7 @@
         await webcam.play();
         window.requestAnimationFrame(loop);
 
-        // Add webcam canvas to DOM (but it's hidden via CSS)
+        // Add webcam canvas to DOM (hidden via CSS)
         document.body.appendChild(webcam.canvas);
       } catch (error) {
         console.error("Initialization error:", error);
@@ -57,13 +57,13 @@
       const best = prediction[0];
       const result = best.className;
 
-      // Send only the class name back to MIT App Inventor
+      // Send result to MIT App Inventor
       if (window.AppInventor) {
         window.AppInventor.setWebViewString(result);
       }
     }
 
-    init(); // Start everything
+    init(); // Start classification
   </script>
 </body>
 </html>
