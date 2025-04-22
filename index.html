@@ -24,23 +24,28 @@
 </head>
 <body>
   <script type="text/javascript">
-    // Set the model URL
+    // Set the model URL (Make sure it's correct)
     const URL = "https://onkarkamtam.github.io/number-plate-verifier/"; // URL to your GitHub Pages hosting the model files
 
     let model, webcam, maxPredictions;
 
     async function init() {
       try {
+        console.log("Initializing...");
         // Load the model and metadata from the specified URL
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
+        console.log("Loading model...");
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
+        console.log("Model loaded successfully!");
 
         // Set up the webcam to use the rear camera
         webcam = new tmImage.Webcam(320, 240, false); // Don't flip for rear camera
         await webcam.setup({ facingMode: "environment" }); // Request rear camera
+        console.log("Webcam setup successfully.");
+        
         await webcam.play();
         window.requestAnimationFrame(loop);
 
@@ -48,6 +53,7 @@
         document.body.appendChild(webcam.canvas);
       } catch (error) {
         console.error("Initialization error:", error);
+        alert("Initialization error: " + error);
         if (window.AppInventor) {
           window.AppInventor.setWebViewString("error");
         }
@@ -61,15 +67,20 @@
     }
 
     async function predict() {
-      // Perform prediction on the current frame
-      const prediction = await model.predict(webcam.canvas);
-      prediction.sort((a, b) => b.probability - a.probability); // Sort predictions by probability
-      const best = prediction[0]; // Get the most likely class
-      const result = best.className;
+      try {
+        // Perform prediction on the current frame
+        const prediction = await model.predict(webcam.canvas);
+        prediction.sort((a, b) => b.probability - a.probability); // Sort predictions by probability
+        const best = prediction[0]; // Get the most likely class
+        const result = best.className;
+        console.log("Prediction:", result);
 
-      // Send the classification result back to MIT App Inventor
-      if (window.AppInventor) {
-        window.AppInventor.setWebViewString(result);
+        // Send the classification result back to MIT App Inventor
+        if (window.AppInventor) {
+          window.AppInventor.setWebViewString(result);
+        }
+      } catch (error) {
+        console.error("Prediction error:", error);
       }
     }
 
