@@ -1,65 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Classifier Engine</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+  <meta charset="UTF-8">
+  <title>Teachable Machine Back Camera</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
   <style>
     body {
-      margin: 0;
-      background: black;
-      overflow: hidden;
+      text-align: center;
+      font-family: sans-serif;
     }
     video {
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
+      width: 100%;
+      max-width: 480px;
     }
-    canvas {
-      display: none;
+    #loading {
+      font-size: 20px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <video id="video" autoplay playsinline muted></video>
+  <h1>Teachable Machine Classifier</h1>
+  <div id="loading">Loading model...</div>
+  <div id="webcam-container"></div>
+  <p id="label">Waiting for predictions...</p>
 
   <script type="text/javascript">
-    const URL = "https://onkarkamtam.github.io/number-plate-verifier/";
+    const URL = "https://teachablemachine.withgoogle.com/models/OhqMmcddf/"; // Your model URL
 
-    let model, webcam, maxPredictions;
+    let model, webcam, labelContainer, maxPredictions;
 
     async function init() {
+      document.getElementById("loading").style.display = "block"; // Show loading message
+
       try {
-        // Load the model
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
+
+        // Load the model and metadata
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
-        console.log("✅ Model loaded");
 
-        // Check available video inputs
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cams = devices.filter(device => device.kind === "videoinput");
-        console.log("📷 Cameras found:", cams);
-
-        // Setup webcam (try rear camera, fallback if needed)
-        webcam = new tmImage.Webcam(320, 240, false); // no flip
-        await webcam.setup({ facingMode: "environment" })  // less strict
-          .catch(async () => {
-            console.warn("Rear cam not available, using default camera.");
-            await webcam.setup(); // fallback to default
-          });
-
+        // Setup webcam: force rear-facing camera
+        const flip = false; // no mirror effect for rear camera
+        webcam = new tmImage.Webcam(320, 240, flip);
+        await webcam.setup({ facingMode: "environment" }); // request rear camera
         await webcam.play();
-        document.getElementById("video").srcObject = webcam.webcam.stream;
         window.requestAnimationFrame(loop);
-      } catch (err) {
-        console.error("❌ Initialization error:", err);
-        alert("Error starting webcam/model. See console.");
-        if (window.AppInventor) {
-          window.AppInventor.setWebViewString("error");
+
+        // Add webcam to DOM
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+        // Prepare label elements
+        labelContainer = document.createElement("div");
+        labelContainer.id = "label-container";
+        document.body.appendChild(labelContainer);
+
+        for (let i = 0; i < maxPredictions; i++) {
+          labelContainer.appendChild(document.createElement("div"));
         }
+
+        document.getElementById("loading").style.display = "none"; // Hide loading
+      } catch (error) {
+        console.error("Error initializing webcam or model:", error);
+        alert("An error occurred while starting the webcam or loading the model. Please check permissions or console for details.");
+        document.getElementById("loading").innerText = "Failed to load. See console for details.";
       }
     }
 
@@ -73,15 +79,15 @@
       const prediction = await model.predict(webcam.canvas);
       prediction.sort((a, b) => b.probability - a.probability);
       const best = prediction[0];
-      console.log("✅ Prediction:", best.className);
+      document.getElementById("label").innerText =
+        `Prediction: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
 
-      // Send result back to App Inventor
       if (window.AppInventor) {
         window.AppInventor.setWebViewString(best.className);
       }
     }
 
-    init();
+    init(); // Start everything
   </script>
 </body>
 </html>
