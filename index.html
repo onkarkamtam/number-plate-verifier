@@ -27,12 +27,12 @@
   <p id="label">Waiting for predictions...</p>
 
   <script type="text/javascript">
-    const URL = "https://teachablemachine.withgoogle.com/models/OhqMmcddf/"; // Replace with your model URL
+    const URL = "https://teachablemachine.withgoogle.com/models/OhqMmcddf/"; // Your model URL
 
     let model, webcam, labelContainer, maxPredictions;
 
     async function init() {
-      document.getElementById("loading").style.display = "block"; // Show loading
+      document.getElementById("loading").style.display = "block"; // Show loading message
 
       try {
         const modelURL = URL + "model.json";
@@ -42,56 +42,52 @@
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
 
-        // Get media devices (prefer rear camera)
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        const rearCamera = videoDevices.find(device => device.label.toLowerCase().includes('back'));
-        const cameraId = rearCamera ? rearCamera.deviceId : videoDevices[0].deviceId;
-
-        // Setup webcam
-        const flip = false; // No flip for rear camera
-        webcam = new tmImage.Webcam(320, 240, flip, cameraId); // Higher resolution
-        await webcam.setup();
+        // Setup webcam: force rear-facing camera
+        const flip = false; // no mirror effect for rear camera
+        webcam = new tmImage.Webcam(320, 240, flip);
+        await webcam.setup({ facingMode: "environment" }); // request rear camera
         await webcam.play();
         window.requestAnimationFrame(loop);
 
-        // Append the webcam feed to the DOM
+        // Add webcam to DOM
         document.getElementById("webcam-container").appendChild(webcam.canvas);
-        labelContainer = document.getElementById("label-container");
 
-        // Create prediction label elements
+        // Prepare label elements
+        labelContainer = document.createElement("div");
+        labelContainer.id = "label-container";
+        document.body.appendChild(labelContainer);
+
         for (let i = 0; i < maxPredictions; i++) {
           labelContainer.appendChild(document.createElement("div"));
         }
 
         document.getElementById("loading").style.display = "none"; // Hide loading
       } catch (error) {
-        console.error("Error initializing model or webcam:", error);
+        console.error("Error initializing webcam or model:", error);
         alert("An error occurred while starting the webcam or loading the model. Please check permissions or console for details.");
         document.getElementById("loading").innerText = "Failed to load. See console for details.";
       }
     }
 
     async function loop() {
-      webcam.update(); // Update the webcam frame
-      await predict(); // Get predictions from model
-      window.requestAnimationFrame(loop); // Repeat the loop
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
     }
 
     async function predict() {
       const prediction = await model.predict(webcam.canvas);
-      prediction.sort((a, b) => b.probability - a.probability); // Sort predictions by probability
-      const best = prediction[0]; // Get the top prediction
+      prediction.sort((a, b) => b.probability - a.probability);
+      const best = prediction[0];
       document.getElementById("label").innerText =
         `Prediction: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
 
-      // Send result to MIT App Inventor if available
       if (window.AppInventor) {
         window.AppInventor.setWebViewString(best.className);
       }
     }
 
-    init(); // Start the process
+    init(); // Start everything
   </script>
 </body>
 </html>
