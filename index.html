@@ -2,38 +2,53 @@
 <html>
 <head>
   <title>TM Image Check</title>
+
+  <!-- ✅ Include Teachable Machine Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+
   <script type="text/javascript">
     let model, maxPredictions;
 
+    // ✅ Load the model on page load
     async function loadModel() {
-      const URL = "https://teachablemachine.withgoogle.com/models/GDWIDjNLs/"; // Change this
+      const URL = "https://teachablemachine.withgoogle.com/models/GDWIDjNLs/"; // Replace with your model if needed
       const modelURL = URL + "model.json";
       const metadataURL = URL + "metadata.json";
 
       model = await tmImage.load(modelURL, metadataURL);
       maxPredictions = model.getTotalClasses();
+      console.log("Model loaded");
     }
 
+    // ✅ Predict once image is loaded
     async function predictImage(imgElement) {
       const prediction = await model.predict(imgElement);
       let result = prediction[0].className + ": " + (prediction[0].probability * 100).toFixed(2) + "%";
       document.getElementById("result").innerText = result;
+      console.log("Prediction:", result);
 
-      // If you want to send result back to MIT App
-      AppInventor.setWebViewString(result);
+      // ✅ Send result back to MIT App Inventor
+      if (window.AppInventor && window.AppInventor.setWebViewString) {
+        window.AppInventor.setWebViewString(result);
+      }
     }
 
     window.onload = async function () {
       await loadModel();
-    };
 
-    // Receive Base64 from MIT App Inventor
-    window.AppInventor.setWebViewString = async function (base64String) {
-      const img = new Image();
-      img.src = base64String;
-      img.onload = function () {
-        predictImage(img);
-      };
+      // ✅ Define WebViewString handler only if inside MIT App Inventor
+      if (window.AppInventor) {
+        window.AppInventor.receiveBase64 = async function (base64String) {
+          console.log("Received base64 image:", base64String);
+
+          const img = new Image();
+          img.src = base64String;
+
+          img.onload = function () {
+            predictImage(img);
+          };
+        };
+      }
     };
   </script>
 </head>
