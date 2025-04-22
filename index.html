@@ -12,33 +12,38 @@
       overflow: hidden;
     }
     canvas {
-      display: none; /* hide the webcam preview */
+      display: none; /* Hide the webcam preview */
     }
   </style>
 </head>
 <body>
   <script type="text/javascript">
-    const URL = "./"; // Since model files are in the same folder
+    const URL = "./"; // Make sure the model files are in the same folder
 
     let model, webcam, maxPredictions;
 
     async function init() {
       try {
+        // Load model and metadata
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
+        console.log("Model loaded successfully");
 
+        // Set up webcam with rear camera
         webcam = new tmImage.Webcam(320, 240, false);
         await webcam.setup({ facingMode: "environment" }); // Use rear camera
+        console.log("Webcam setup successfully");
+
         await webcam.play();
         window.requestAnimationFrame(loop);
-
-        // Add webcam canvas to DOM (hidden via CSS)
         document.body.appendChild(webcam.canvas);
+
       } catch (error) {
         console.error("Initialization error:", error);
+        alert("Failed to initialize webcam or model. Please check console for details.");
         if (window.AppInventor) {
           window.AppInventor.setWebViewString("error");
         }
@@ -46,24 +51,35 @@
     }
 
     async function loop() {
-      webcam.update();
-      await predict();
-      window.requestAnimationFrame(loop);
-    }
-
-    async function predict() {
-      const prediction = await model.predict(webcam.canvas);
-      prediction.sort((a, b) => b.probability - a.probability);
-      const best = prediction[0];
-      const result = best.className;
-
-      // Send result to MIT App Inventor
-      if (window.AppInventor) {
-        window.AppInventor.setWebViewString(result);
+      try {
+        webcam.update(); // Update the webcam frame
+        await predict();
+        window.requestAnimationFrame(loop); // Keep updating for live feed
+      } catch (error) {
+        console.error("Error during prediction loop:", error);
       }
     }
 
-    init(); // Start classification
+    async function predict() {
+      try {
+        const prediction = await model.predict(webcam.canvas);
+        prediction.sort((a, b) => b.probability - a.probability);
+        const best = prediction[0];
+        const result = best.className;
+
+        console.log("Prediction:", result);
+
+        // Send result to MIT App Inventor
+        if (window.AppInventor) {
+          window.AppInventor.setWebViewString(result);
+        }
+      } catch (error) {
+        console.error("Error during prediction:", error);
+      }
+    }
+
+    // Start the process
+    init();
   </script>
 </body>
 </html>
