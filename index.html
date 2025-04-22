@@ -1,71 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Teachable Machine Back Camera</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>Classifier Engine</title>
+  <!-- Load TensorFlow.js and Teachable Machine Image library -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
   <style>
     body {
-      text-align: center;
-      font-family: sans-serif;
+      margin: 0;
+      background: black;
+      overflow: hidden;
     }
     video {
-      width: 100%;
-      max-width: 480px;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
     }
-    #loading {
-      font-size: 20px;
-      margin-top: 20px;
+    canvas {
+      display: none; /* Hide the webcam canvas */
     }
   </style>
 </head>
 <body>
-  <h1>Teachable Machine Classifier</h1>
-  <div id="loading">Loading model...</div>
-  <div id="webcam-container"></div>
-  <p id="label">Waiting for predictions...</p>
-
   <script type="text/javascript">
-    const URL = "https://teachablemachine.withgoogle.com/models/OhqMmcddf/"; // Your model URL
+    // Set the model URL
+    const URL = "https://onkarkamtam.github.io/number-plate-verifier/"; // URL to your GitHub Pages hosting the model files
 
-    let model, webcam, labelContainer, maxPredictions;
+    let model, webcam, maxPredictions;
 
     async function init() {
-      document.getElementById("loading").style.display = "block"; // Show loading message
-
       try {
+        // Load the model and metadata from the specified URL
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
-        // Load the model and metadata
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
 
-        // Setup webcam: force rear-facing camera
-        const flip = false; // no mirror effect for rear camera
-        webcam = new tmImage.Webcam(320, 240, flip);
-        await webcam.setup({ facingMode: "environment" }); // request rear camera
+        // Set up the webcam to use the rear camera
+        webcam = new tmImage.Webcam(320, 240, false); // Don't flip for rear camera
+        await webcam.setup({ facingMode: "environment" }); // Request rear camera
         await webcam.play();
         window.requestAnimationFrame(loop);
 
-        // Add webcam to DOM
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
-
-        // Prepare label elements
-        labelContainer = document.createElement("div");
-        labelContainer.id = "label-container";
-        document.body.appendChild(labelContainer);
-
-        for (let i = 0; i < maxPredictions; i++) {
-          labelContainer.appendChild(document.createElement("div"));
-        }
-
-        document.getElementById("loading").style.display = "none"; // Hide loading
+        // Add the webcam canvas to the DOM (hidden via CSS)
+        document.body.appendChild(webcam.canvas);
       } catch (error) {
-        console.error("Error initializing webcam or model:", error);
-        alert("An error occurred while starting the webcam or loading the model. Please check permissions or console for details.");
-        document.getElementById("loading").innerText = "Failed to load. See console for details.";
+        console.error("Initialization error:", error);
+        if (window.AppInventor) {
+          window.AppInventor.setWebViewString("error");
+        }
       }
     }
 
@@ -76,18 +61,19 @@
     }
 
     async function predict() {
+      // Perform prediction on the current frame
       const prediction = await model.predict(webcam.canvas);
-      prediction.sort((a, b) => b.probability - a.probability);
-      const best = prediction[0];
-      document.getElementById("label").innerText =
-        `Prediction: ${best.className} (${(best.probability * 100).toFixed(2)}%)`;
+      prediction.sort((a, b) => b.probability - a.probability); // Sort predictions by probability
+      const best = prediction[0]; // Get the most likely class
+      const result = best.className;
 
+      // Send the classification result back to MIT App Inventor
       if (window.AppInventor) {
-        window.AppInventor.setWebViewString(best.className);
+        window.AppInventor.setWebViewString(result);
       }
     }
 
-    init(); // Start everything
+    init(); // Start the process
   </script>
 </body>
 </html>
