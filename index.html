@@ -11,36 +11,60 @@
       background: black;
       overflow: hidden;
     }
+    #webcam-container {
+      display: block;
+      margin: auto;
+      position: relative;
+      width: 100%;
+      height: 100vh;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+    }
     canvas {
       display: none; /* Hide the webcam preview */
+    }
+    #label {
+      color: white;
+      font-size: 24px;
+      text-align: center;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
+  <div id="webcam-container">
+    <video id="webcam" autoplay playsinline></video>
+  </div>
+  <p id="label">Waiting for predictions...</p>
+
   <script type="text/javascript">
-    const URL = "./"; // Make sure the model files are in the same folder
+    const URL = "./"; // Since model files are in the same folder
 
     let model, webcam, maxPredictions;
 
+    // Initialize the webcam and the model
     async function init() {
       try {
-        // Load model and metadata
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
+        // Load the model and metadata
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
         console.log("Model loaded successfully");
 
-        // Set up webcam with rear camera
-        webcam = new tmImage.Webcam(320, 240, false);
-        await webcam.setup({ facingMode: "environment" }); // Use rear camera
-        console.log("Webcam setup successfully");
+        // Set up webcam: requesting rear camera
+        webcam = new tmImage.Webcam(320, 240, false);  // No flip for rear camera
+        await webcam.setup({ facingMode: "environment" }); // Request rear camera
+        console.log("Webcam setup successful");
 
         await webcam.play();
         window.requestAnimationFrame(loop);
-        document.body.appendChild(webcam.canvas);
 
+        // Display webcam in the DOM
+        document.getElementById("webcam").srcObject = webcam.stream;
       } catch (error) {
         console.error("Initialization error:", error);
         alert("Failed to initialize webcam or model. Please check console for details.");
@@ -50,35 +74,32 @@
       }
     }
 
+    // Update the frame and make predictions continuously
     async function loop() {
-      try {
-        webcam.update(); // Update the webcam frame
-        await predict();
-        window.requestAnimationFrame(loop); // Keep updating for live feed
-      } catch (error) {
-        console.error("Error during prediction loop:", error);
-      }
+      webcam.update(); // Update the webcam frame
+      await predict(); // Run the model prediction
+      window.requestAnimationFrame(loop); // Keep updating
     }
 
+    // Predict function to get class names from the model
     async function predict() {
-      try {
-        const prediction = await model.predict(webcam.canvas);
-        prediction.sort((a, b) => b.probability - a.probability);
-        const best = prediction[0];
-        const result = best.className;
+      const prediction = await model.predict(webcam.canvas);
+      prediction.sort((a, b) => b.probability - a.probability);
+      const best = prediction[0]; // Best prediction
+      const result = best.className;
 
-        console.log("Prediction:", result);
+      console.log("Prediction: " + result);
 
-        // Send result to MIT App Inventor
-        if (window.AppInventor) {
-          window.AppInventor.setWebViewString(result);
-        }
-      } catch (error) {
-        console.error("Error during prediction:", error);
+      // Send result back to MIT App Inventor
+      if (window.AppInventor) {
+        window.AppInventor.setWebViewString(result);
       }
+
+      // Update the label on the screen
+      document.getElementById("label").innerText = `Prediction: ${result} (${(best.probability * 100).toFixed(2)}%)`;
     }
 
-    // Start the process
+    // Start everything
     init();
   </script>
 </body>
