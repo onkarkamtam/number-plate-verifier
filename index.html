@@ -60,11 +60,17 @@
         await webcam.setup({ facingMode: "environment" }); // Request rear camera
         console.log("Webcam setup successful");
 
+        // Add webcam canvas to DOM (hidden via CSS)
+        document.getElementById("webcam").srcObject = webcam.stream;
+
+        // Ensure the video stream is ready
+        webcam.on('play', () => {
+          console.log("Webcam is playing");
+          document.getElementById("webcam").style.display = "block";  // Show webcam feed
+        });
+
         await webcam.play();
         window.requestAnimationFrame(loop);
-
-        // Display webcam in the DOM
-        document.getElementById("webcam").srcObject = webcam.stream;
       } catch (error) {
         console.error("Initialization error:", error);
         alert("Failed to initialize webcam or model. Please check console for details.");
