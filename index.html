@@ -29,39 +29,34 @@
       const image = document.getElementById("image");
       const prediction = await model.predict(image);
 
-      // Find highest probability prediction
       let highest = prediction.reduce((prev, current) => (prev.probability > current.probability) ? prev : current);
-
-      // Show result
       document.getElementById('message').innerText = `Result: ${highest.className} (${(highest.probability * 100).toFixed(2)}%)`;
     }
 
     function updateImage(base64Image) {
       if (base64Image) {
         document.getElementById('image').src = 'data:image/png;base64,' + base64Image;
-        setTimeout(() => { predictImage(); }, 500); // small delay to ensure image loads
+        setTimeout(() => { predictImage(); }, 500);
       } else {
         document.getElementById('message').innerText = "No image data found.";
       }
     }
 
-    function displayBase64Image() {
-      if (window.AppInventor) {
-        let base64Image = window.AppInventor.getWebViewString();
-        updateImage(base64Image);
+    let previousString = "";
 
-        document.addEventListener('newWebViewString', function() {
-          let updatedImage = window.AppInventor.getWebViewString();
-          updateImage(updatedImage);
-        });
-      } else {
-        document.getElementById('message').innerText = "This page needs to be opened inside the app.";
+    function checkWebViewStringUpdate() {
+      if (window.AppInventor) {
+        let currentString = window.AppInventor.getWebViewString();
+        if (currentString && currentString !== previousString) {
+          previousString = currentString;
+          updateImage(currentString);
+        }
       }
     }
 
     window.onload = function() {
-      loadModel();   // First load your teachable machine model
-      displayBase64Image();  // Then wait for app to send image
+      loadModel();
+      setInterval(checkWebViewStringUpdate, 2000); // every 2 seconds check for new image
     }
   </script>
 </body>
