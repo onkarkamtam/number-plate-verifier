@@ -10,22 +10,16 @@
     <img id="image" alt="Uploaded Image" style="max-width: 100%;"/>
 
     <script>
-        function displayBase64Image() {
-            // Get the 'image' parameter from the URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const base64Image = urlParams.get('image');
-
+        window.onload = function() {
+            // Get the Base64 string from WebViewString
+            let base64Image = window.AppInventor.getWebViewString();
             if (base64Image) {
-                // Ensure Base64 data is correctly formatted
-                let decodedImage = decodeURIComponent(base64Image);  // Decode URL-encoded Base64 string
-                document.getElementById('image').src = 'data:image/jpeg;base64,' + decodedImage;
+                // Set the Base64 image in the <img> tag
+                document.getElementById('image').src = 'data:image/jpeg;base64,' + base64Image;
             } else {
-                document.getElementById('image').alt = "No image found!";
+                document.getElementById('image').alt = "No image received!";
             }
         }
-
-        // Call function to display the image when page loads
-        window.onload = displayBase64Image;
     </script>
 </body>
 </html>
