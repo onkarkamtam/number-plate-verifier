@@ -1,63 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Number Plate Verification</title>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Verification with Teachable Machine</title>
 </head>
 <body>
-  <h2>Number Plate Verification</h2>
-  <img id="image" alt="Uploaded Image" style="max-width: 100%; height: auto;" />
-  <p id="message" style="color: green; font-size: 20px;"></p>
+    <h1>Verify Image with Teachable Machine</h1>
+    <p>Upload an image or provide a Base64 string:</p>
+    <textarea id="base64input" placeholder="Paste your Base64 image here..." rows="10" cols="50"></textarea><br><br>
+    <button onclick="sendImage()">Verify Image</button>
 
-  <script>
-    const modelURL = "https://teachablemachine.withgoogle.com/models/GDWIDjNLs/model.json";
-    const metadataURL = "https://teachablemachine.withgoogle.com/models/GDWIDjNLs/metadata.json";
-    let model;
+    <div id="result"></div>
 
-    async function loadModel() {
-      model = await tmImage.load(modelURL, metadataURL);
-      console.log("Model loaded");
-    }
+    <script>
+        async function sendImage() {
+            // Get the Base64 image string
+            const base64Image = document.getElementById('base64input').value;
 
-    async function predictImage() {
-      if (!model) {
-        console.error("Model not loaded yet!");
-        return;
-      }
-      const image = document.getElementById("image");
-      const prediction = await model.predict(image);
+            // Make sure the Base64 string is not empty
+            if (base64Image.trim() === '') {
+                document.getElementById('result').innerHTML = 'Please provide a Base64 image string!';
+                return;
+            }
 
-      let highest = prediction.reduce((prev, current) => (prev.probability > current.probability) ? prev : current);
-      document.getElementById('message').innerText = `Result: ${highest.className} (${(highest.probability * 100).toFixed(2)}%)`;
-    }
+            // Teachable Machine Model URL (replace this with your model's URL)
+            const modelURL = 'https://teachablemachine.withgoogle.com/models/OhqMmcddf/model.json';
 
-    function updateImage(base64Image) {
-      if (base64Image) {
-        document.getElementById('image').src = 'data:image/png;base64,' + base64Image;
-        setTimeout(() => { predictImage(); }, 500);
-      } else {
-        document.getElementById('message').innerText = "No image data found.";
-      }
-    }
+            // Send the Base64 image to your Teachable Machine model
+            const response = await fetch(modelURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: base64Image })  // Sending the Base64 image
+            });
 
-    let previousString = "";
+            // Parse the response
+            const data = await response.json();
+            console.log(data);
 
-    function checkWebViewStringUpdate() {
-      if (window.AppInventor) {
-        let currentString = window.AppInventor.getWebViewString();
-        if (currentString && currentString !== previousString) {
-          previousString = currentString;
-          updateImage(currentString);
+            // Show the result
+            if (data) {
+                if (data.prediction) {
+                    document.getElementById('result').innerHTML = `Image Verified: ${data.prediction}`;
+                } else {
+                    document.getElementById('result').innerHTML = 'Image Verification Failed';
+                }
+            } else {
+                document.getElementById('result').innerHTML = 'Error: Could not verify image.';
+            }
         }
-      }
-    }
-
-    window.onload = function() {
-      loadModel();
-      setInterval(checkWebViewStringUpdate, 2000); // every 2 seconds check for new image
-    }
-  </script>
+    </script>
 </body>
 </html>
