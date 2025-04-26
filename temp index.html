@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Image Display</title>
+</head>
+<body>
+    <h2>Base64 Image Display</h2>
+    <img id="image" alt="Uploaded Image" style="max-width: 100%;" />
+
+    <script>
+        function displayBase64Image() {
+            // Get the 'image' parameter from the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const base64Image = urlParams.get('image');
+
+            if (base64Image) {
+                // Ensure Base64 data is correctly formatted
+                // Base64 encoded images are URL-encoded in the query parameter, so we need to decode it.
+                let decodedImage = decodeURIComponent(base64Image);  // Decode URL-encoded Base64 string
+
+                // Check if the Base64 string is a valid format before assigning
+                const isValidBase64 = /^[A-Za-z0-9+/=]+$/.test(decodedImage);
+
+                if (isValidBase64) {
+                    // Set the source of the image to the Base64-encoded string
+                    document.getElementById('image').src = 'data:image/jpeg;base64,' + decodedImage;
+                } else {
+                    document.getElementById('image').alt = "Invalid Base64 image data!";
+                }
+            } else {
+                document.getElementById('image').alt = "No image found in the URL parameters!";
+            }
+        }
+
+        // Call function to display the image when page loads
+        window.onload = displayBase64Image;
+    </script>
+</body>
+</html>
