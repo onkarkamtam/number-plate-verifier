@@ -7,27 +7,24 @@
 </head>
 <body>
   <h2>Base64 Image Display</h2>
-  <img id="image" alt="Uploaded Image" style="max-width: 100%;"/>
+  <img id="image" alt="Uploaded Image" style="max-width: 100%;" />
+  <p id="message" style="color: red;"></p>
 
   <script>
-    function updateImage(base64Image) {
-      if (base64Image) {
-        document.getElementById('image').src = 'data:image/jpeg;base64,' + base64Image;
+    function displayBase64Image() {
+      if (window.AppInventor) {
+        let base64Image = window.AppInventor.getWebViewString();
+        if (base64Image) {
+          document.getElementById('image').src = 'data:image/png;base64,' + base64Image;
+        } else {
+          document.getElementById('message').innerText = "No image data found.";
+        }
       } else {
-        document.getElementById('image').alt = "No image received!";
+        document.getElementById('message').innerText = "This page needs to be opened inside the app.";
       }
     }
 
-    // Listen every time the WebViewString changes
-    window.AppInventor.setWebViewString = function(base64Image) {
-      updateImage(base64Image);
-    }
-
-    // Also set initially if already present
-    window.onload = function() {
-      let base64Image = window.AppInventor.getWebViewString();
-      updateImage(base64Image);
-    }
+    window.onload = displayBase64Image;
   </script>
 </body>
 </html>
