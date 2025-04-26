@@ -3,28 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Base64 Image Display</title>
+  <title>Number Plate Verification</title>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 </head>
 <body>
-  <h2>Base64 Image Display</h2>
-  <img id="image" alt="Uploaded Image" style="max-width: 100%;" />
-  <p id="message" style="color: red;"></p>
+  <h2>Number Plate Verification</h2>
+  <img id="image" alt="Uploaded Image" style="max-width: 100%; height: auto;" />
+  <p id="message" style="color: green; font-size: 20px;"></p>
 
   <script>
+    const modelURL = "https://teachablemachine.withgoogle.com/models/GDWIDjNLs/model.json";
+    const metadataURL = "https://teachablemachine.withgoogle.com/models/GDWIDjNLs/metadata.json";
+    let model;
+
+    async function loadModel() {
+      model = await tmImage.load(modelURL, metadataURL);
+      console.log("Model loaded");
+    }
+
+    async function predictImage() {
+      if (!model) {
+        console.error("Model not loaded yet!");
+        return;
+      }
+      const image = document.getElementById("image");
+      const prediction = await model.predict(image);
+
+      // Find highest probability prediction
+      let highest = prediction.reduce((prev, current) => (prev.probability > current.probability) ? prev : current);
+
+      // Show result
+      document.getElementById('message').innerText = `Result: ${highest.className} (${(highest.probability * 100).toFixed(2)}%)`;
+    }
+
+    function updateImage(base64Image) {
+      if (base64Image) {
+        document.getElementById('image').src = 'data:image/png;base64,' + base64Image;
+        setTimeout(() => { predictImage(); }, 500); // small delay to ensure image loads
+      } else {
+        document.getElementById('message').innerText = "No image data found.";
+      }
+    }
+
     function displayBase64Image() {
       if (window.AppInventor) {
         let base64Image = window.AppInventor.getWebViewString();
-        if (base64Image) {
-          document.getElementById('image').src = 'data:image/png;base64,' + base64Image;
-        } else {
-          document.getElementById('message').innerText = "No image data found.";
-        }
+        updateImage(base64Image);
+
+        document.addEventListener('newWebViewString', function() {
+          let updatedImage = window.AppInventor.getWebViewString();
+          updateImage(updatedImage);
+        });
       } else {
         document.getElementById('message').innerText = "This page needs to be opened inside the app.";
       }
     }
 
-    window.onload = displayBase64Image;
+    window.onload = function() {
+      loadModel();   // First load your teachable machine model
+      displayBase64Image();  // Then wait for app to send image
+    }
   </script>
 </body>
 </html>
